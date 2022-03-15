@@ -38,15 +38,15 @@ object App {
         val filesMap = files.map { f =>
           val source = Source.fromFile(f.getPath)
 
-          val resultMap = try {
+          val resultList = try {
             val wordList = source.mkString.trim().split("""[\s,.;:!?*]+""").map(_.toLowerCase()).distinct //or toSet
             val filteredList = wordList.filter(x => wordSeq.contains(x))
             val rank = filteredList.length / (wordSeq.length).toFloat * 100
             (f.toString() -> rank)
           } finally source.close()
-          resultMap
-        }.toMap
-        val documentsWithResults = filesMap.filter(x => x._2 > 0.0).toSeq.sortBy(_._2)(Ordering[Float].reverse)
+          resultList
+        }.toSeq
+        val documentsWithResults = filesMap.filter(x => x._2 > 0.0).sortBy(_._2)(Ordering[Float].reverse)
         if (documentsWithResults.size != 0)
           println(documentsWithResults.map(x => x._1 + " " + x._2 + "%\n").mkString)
         else print("no matches found\n")
