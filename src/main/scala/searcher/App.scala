@@ -25,24 +25,26 @@ object App {
   }
 
   def main(args: Array[String]) {
-    if(args.length==0){
+    if (args.length == 0) {
       throw new IllegalArgumentException("No directory given to index.")
     }
     var sentence = ""
+    val files = args.flatMap { dir => getListOfFiles(dir) }
+    println(s"${files.length} files read in directory ${args.toList.mkString(",")}\n")
+    val spark = SparkSession.builder()
+      .master("local[1]")
+      .appName("little-search-word-count")
+      .getOrCreate();
+    val sc = spark.sparkContext
+
     while (sentence != ":quit") {
       print("search> ")
       sentence = readLine()
-      val spark = SparkSession.builder()
-        .master("local[1]")
-        .appName("little-search-word-count")
-        .getOrCreate();
-      val sc = spark.sparkContext
 
-      if(sentence != ":quit") {
+      if (sentence != ":quit") {
         val wordSeq = sentence.toLowerCase().split("""[\s,.;:!?]+""").toSeq
         println("concat arguments = " + wordSeq.toString())
 
-        val files = args.flatMap{dir=>getListOfFiles(dir)}
         val result = files.map { f =>
           val wordCountRDD = sc.textFile(f.getPath)
           val wordCountArray = wordCountRDD.flatMap(_.split("""[\s,.;:!?]+""")).
@@ -56,9 +58,9 @@ object App {
 
           (f.toString() -> rank)
         }.sortBy(_._2)(Ordering[Float].reverse)
-        val documentsWithResults=result.filter(x=>x._2>0.0)
-        if(documentsWithResults.length!=0)
-          println(documentsWithResults.map(x=>x._1+" "+x._2+"%\n").mkString)
+        val documentsWithResults = result.filter(x => x._2 > 0.0)
+        if (documentsWithResults.length != 0)
+          println(documentsWithResults.map(x => x._1 + " " + x._2 + "%\n").mkString)
         else print("no matches found\n")
 
       }
